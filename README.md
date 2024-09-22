@@ -210,10 +210,14 @@ Use this template to generate git commits from the staged files in your git dire
 
 Use this template to generate prompts for improving the performance of the codebase. It will look for optimization opportunities, provide specific suggestions, and update the code with the changes.
 
-You can use these templates by passing the `-t` flag followed by the path to the template file. For example:
+### [`refactor-code.hbs`](templates/refactor-code.hbs)
+
+Use this template to generate prompts for refactoring the codebase. It will analyze the code structure and suggest improvements in design, maintainability, and performance while adhering to SOLID principles and other best practices.
+
+You can use this template by running:
 
 ```sh
-code2prompt path/to/codebase -t templates/document-the-code.hbs
+code2prompt path/to/codebase -t templates/refactor-code.hbs
 ```
 
 ## User Defined Variables

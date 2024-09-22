@@ -1,0 +1,37 @@
+Project Path: {{ absolute_code_path }}
+
+I need your help refactoring this codebase to improve its design, maintainability, and performance. Here are the files involved:
+
+Source Tree:
+```
+{{ source_tree }}
+```
+
+{{#each files}} 
+{{#if code}}
+`{{path}}`: 
+
+{{code}}
+
+{{/if}}
+{{/each}}
+
+Some areas to focus on during the refactoring:
+
+- Adherence to SOLID principles (Single Responsibility, Open-Closed, Liskov Substitution, Interface Segregation, Dependency Inversion)
+- Separation of concerns
+- Reducing duplication (DRY - Don't Repeat Yourself)
+- Improving naming and code readability
+- Enhancing modularity and reusability
+- Optimizing performance
+- Removing dead or redundant code
+- Updating to modern language features or idioms where appropriate
+- Ensuring consistent code style and formatting
+
+For each suggested refactoring, please provide:
+1. File path and line number(s)
+2. Current code snippet
+3. Refactored code snippet
+4. Explanation of the improvement
+
+Please ensure that the refactoring doesn't change the overall functionality of the code.
