@@ -1,266 +1,105 @@
-# code2prompt
+# DictationApp
 
-[![crates.io](https://img.shields.io/crates/v/code2prompt.svg)](https://crates.io/crates/code2prompt)
-[![LICENSE](https://img.shields.io/github/license/mufeedvh/code2prompt.svg#cache1)](https://github.com/mufeedvh/code2prompt/blob/master/LICENSE)
-
-<h1 align="center">
-  <a href="https://github.com/mufeedvh/code2prompt"><img src=".assets/code2prompt-screenshot.png" alt="code2prompt"></a>
-</h1>
-
-`code2prompt` is a command-line tool (CLI) that converts your codebase into a single LLM prompt with a source tree, prompt templating, and token counting.
-
-## Table of Contents
-
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Templates](#templates)
-- [User Defined Variables](#user-defined-variables)
-- [Tokenizers](#tokenizers)
-- [Build From Source](#build-from-source)
-- [Contribution](#contribution)
-- [License](#license)
-- [Support The Author](#support-the-author)
+DictationApp is a Python-based application for macOS that allows users to dictate speech and have the transcribed text populate in any app where the cursor is active.
 
 ## Features
 
-You can run this tool on the entire directory and it would generate a well-formatted Markdown prompt detailing the source tree structure, and all the code. You can then upload this document to either GPT or Claude models with higher context windows and ask it to:
+- Dictation to Active Cursor Field
+- Transcription using OpenAI's Whisper-1 API
+- Cleanup of transcriptions using GPT-4o-mini
+- Global hotkeys for starting and stopping recording
+- User-friendly interface with recording button and countdown
+- Multi-language support
+- Customizable themes
 
-- Quickly generate LLM prompts from codebases of any size.
-- Customize prompt generation with Handlebars templates. (See the [default template](src/default_template.hbs))
-- Respects `.gitignore`.
-- Filter and exclude files using glob patterns.
-- Display the token count of the generated prompt. (See [Tokenizers](#tokenizers) for more details)
-- Optionally include Git diff output (staged files) in the generated prompt.
-- Automatically copy the generated prompt to the clipboard.
-- Save the generated prompt to an output file.
-- Exclude files and folders by name or path.
-- Add line numbers to source code blocks.
+## Recent Updates
 
-You can customize the prompt template to achieve any of the desired use cases. It essentially traverses a codebase and creates a prompt with all source files combined. In short, it automates copy-pasting multiple source files into your prompt and formatting them along with letting you know how many tokens your code consumes.
+### Add space after each dictation
+
+- Modified `insert_text_to_active_window` method in `src/gui/main_window.py`
+- Added a space at the end of each dictated text
+- Improves formatting when inserting multiple dictations in succession
+
+### Remove processing window and update countdown display
+
+- Removed the processing window pop-up during transcription
+- Updated the countdown logic to display "Working My Magic" after the 3-2-1 countdown
+- Kept the yellow "Processing..." button during transcription
+- Improved overall user experience with smoother transitions between recording and text insertion
+
+### Fix: Remove automatic Enter press after dictation insertion
+
+- Modified `insert_text_to_active_window` method in `src/gui/main_window.py`
+- Removed automatic Enter press after inserting dictated text
+- Added optional space at the end of dictated text
 
 ## Installation
 
-### Latest Release
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/DictationApp.git
+   cd DictationApp
+   ```
 
-Download the latest binary for your OS from [Releases](https://github.com/mufeedvh/code2prompt/releases) OR install with `cargo`:
+2. Create and activate a virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
 
-```sh
-cargo install code2prompt
-```
+3. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-For unpublished builds:
+4. Compile translation files:
+   ```bash
+   pylupdate5 src/*.py -ts translations/*.ts
+   lrelease translations/*.ts
+   ```
 
-```sh
-cargo install --git https://github.com/mufeedvh/code2prompt
-```
-
-### Prerequisites
-
-For building `code2prompt` from source, you need to have these tools installed:
-
-- [Git](https://git-scm.org/downloads)
-- [Rust](https://rust-lang.org/tools/install)
-- Cargo (Automatically installed when installing Rust)
-
-```sh
-git clone https://github.com/mufeedvh/code2prompt.git
-cd code2prompt/
-cargo build --release
-```
-
-The first command clones the `code2prompt` repository to your local machine. The next two commands change into the `code2prompt` directory and build it in release mode.
+5. Run the application:
+   ```bash
+   python main.py
+   ```
 
 ## Usage
 
-Generate a prompt from a codebase directory:
-
-```sh
-code2prompt path/to/codebase
-```
-
-Use a custom Handlebars template file:
-
-```sh
-code2prompt path/to/codebase -t path/to/template.hbs
-```
-
-Filter files using glob patterns:
-
-```sh
-code2prompt path/to/codebase --include="*.rs,*.toml"
-```
-
-Exclude files using glob patterns:
-
-```sh
-code2prompt path/to/codebase --exclude="*.txt,*.md"
-```
-
-Exclude files/folders from the source tree based on exclude patterns:
-
-```sh
-code2prompt path/to/codebase --exclude="*.npy,*.wav" --exclude-from-tree
-```
-
-Display the token count of the generated prompt:
-
-```sh
-code2prompt path/to/codebase --tokens
-```
-
-Specify a tokenizer for token count:
-
-```sh
-code2prompt path/to/codebase --tokens --encoding=p50k
-```
-
-Supported tokenizers: `cl100k`, `p50k`, `p50k_edit`, `r50k_bas`.
-> [!NOTE]  
-> See [Tokenizers](#tokenizers) for more details.
-
-Save the generated prompt to an output file:
-
-```sh
-code2prompt path/to/codebase --output=output.txt
-```
-
-Print output as JSON:
-
-```sh
-code2prompt path/to/codebase --json
-```
-
-The JSON output will have the following structure:
-
-```json
-{
-  "prompt": "<Generated Prompt>", 
-  "directory_name": "codebase",
-  "token_count": 1234,
-  "model_info": "ChatGPT models, text-embedding-ada-002",
-  "files": []
-}
-```
-
-Generate a Git commit message (for staged files):
-
-```sh
-code2prompt path/to/codebase --diff -t templates/write-git-commit.hbs
-```
-
-Generate a Pull Request with branch comparing (for staged files):
-
-```sh
-code2prompt path/to/codebase --git-diff-branch 'main, development' --git-log-branch 'main, development' -t templates/write-github-pull-request.hbs
-```
-
-Add line numbers to source code blocks:
-
-```sh
-code2prompt path/to/codebase --line-number
-```
-
-Disable wrapping code inside markdown code blocks:
-
-```sh
-code2prompt path/to/codebase --no-codeblock
-```
-
-- Rewrite the code to another language.
-- Find bugs/security vulnerabilities.
-- Document the code.
-- Implement new features.
-
-> I initially wrote this for personal use to utilize Claude 3.0's 200K context window and it has proven to be pretty useful so I decided to open-source it!
-
-## Templates
-
-`code2prompt` comes with a set of built-in templates for common use cases. You can find them in the [`templates`](templates) directory.
-
-### [`document-the-code.hbs`](templates/document-the-code.hbs)
-
-Use this template to generate prompts for documenting the code. It will add documentation comments to all public functions, methods, classes and modules in the codebase.
-
-### [`find-security-vulnerabilities.hbs`](templates/find-security-vulnerabilities.hbs)
-
-Use this template to generate prompts for finding potential security vulnerabilities in the codebase. It will look for common security issues and provide recommendations on how to fix or mitigate them.
-
-### [`clean-up-code.hbs`](templates/clean-up-code.hbs)
-
-Use this template to generate prompts for cleaning up and improving the code quality. It will look for opportunities to improve readability, adherence to best practices, efficiency, error handling, and more.
-
-### [`fix-bugs.hbs`](templates/fix-bugs.hbs)
-
-Use this template to generate prompts for fixing bugs in the codebase. It will help diagnose issues, provide fix suggestions, and update the code with proposed fixes.
-
-### [`write-github-pull-request.hbs`](templates/write-github-pull-request.hbs)
-
-Use this template to create GitHub pull request description in markdown by comparing the git diff and git log of two branches.
-
-### [`write-github-readme.hbs`](templates/write-github-readme.hbs)
-
-Use this template to generate a high-quality README file for the project, suitable for hosting on GitHub. It will analyze the codebase to understand its purpose and functionality, and generate the README content in Markdown format.
-
-### [`write-git-commit.hbs`](templates/write-git-commit.hbs)
-
-Use this template to generate git commits from the staged files in your git directory. It will analyze the codebase to understand its purpose and functionality, and generate the git commit message content in Markdown format.
-
-### [`improve-performance.hbs`](templates/improve-performance.hbs)
-
-Use this template to generate prompts for improving the performance of the codebase. It will look for optimization opportunities, provide specific suggestions, and update the code with the changes.
-
-### [`refactor-code.hbs`](templates/refactor-code.hbs)
-
-Use this template to generate prompts for refactoring the codebase. It will analyze the code structure and suggest improvements in design, maintainability, and performance while adhering to SOLID principles and other best practices.
-
-You can use this template by running:
-
-```sh
-code2prompt path/to/codebase -t templates/refactor-code.hbs
-```
-
-## User Defined Variables
-
-`code2prompt` supports the use of user defined variables in the Handlebars templates. Any variables in the template that are not part of the default context (`absolute_code_path`, `source_tree`, `files`) will be treated as user defined variables.
-
-During prompt generation, `code2prompt` will prompt the user to enter values for these user defined variables. This allows for further customization of the generated prompts based on user input.
-
-For example, if your template includes `{{challenge_name}}` and `{{challenge_description}}`, you will be prompted to enter values for these variables when running `code2prompt`.
-
-This feature enables creating reusable templates that can be adapted to different scenarios based on user provided information.
-
-## Tokenizers
-
-Tokenization is implemented using [`tiktoken-rs`](https://github.com/zurawiki/tiktoken-rs). `tiktoken` supports these encodings used by OpenAI models:
-
-| Encoding name           | OpenAI models                                                             |
-| ----------------------- | ------------------------------------------------------------------------- |
-| `cl100k_base`           | ChatGPT models, `text-embedding-ada-002`                                  |
-| `p50k_base`             | Code models, `text-davinci-002`, `text-davinci-003`                       |
-| `p50k_edit`             | Use for edit models like `text-davinci-edit-001`, `code-davinci-edit-001` |
-| `r50k_base` (or `gpt2`) | GPT-3 models like `davinci`                                               |
-
-For more context on the different tokenizers, see the [OpenAI Cookbook](https://github.com/openai/openai-cookbook/blob/66b988407d8d13cad5060a881dc8c892141f2d5c/examples/How_to_count_tokens_with_tiktoken.ipynb)
-
-## How is it useful?
-
-`code2prompt` makes it easy to generate prompts for LLMs from your codebase. It traverses the directory, builds a tree structure, and collects information about each file. You can customize the prompt generation using Handlebars templates. The generated prompt is automatically copied to your clipboard and can also be saved to an output file. `code2prompt` helps streamline the process of creating LLM prompts for code analysis, generation, and other tasks.
-
-## Contribution
-
-Ways to contribute:
-
-- Suggest a feature
-- Report a bug  
-- Fix something and open a pull request
-- Help me document the code
-- Spread the word
+1. Click the "Start Recording" button or use the global hotkey to begin dictation
+2. Speak clearly into your microphone
+3. Click the button again or use the hotkey to stop recording
+4. Wait for the transcription process (indicated by the yellow "Processing..." button)
+5. Watch the 3-2-1 countdown followed by "Working My Magic" message
+6. The transcribed and cleaned-up text will be inserted at your cursor location, followed by a space
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ## License
 
-Licensed under the MIT License, see <a href="https://github.com/mufeedvh/code2prompt/blob/master/LICENSE">LICENSE</a> for more information.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Liked the project?
+## Next Steps
 
-If you liked the project and found it useful, please give it a :star: and consider supporting the authors!
+- Consider adding user preferences for post-dictation behavior
+- Explore adding visual/audio cues for dictation completion
+- Test in various applications to ensure compatibility
+
+## Technologies Used
+
+- PyQt5 for GUI
+- PyAudio for recording
+- PyAutoGUI for text insertion
+- SQLite for data storage
+- OpenAI's Whisper-1 API for transcription
+- GPT-4o-mini for transcription cleanup
+
+## Support
+
+If you encounter any issues or have questions, please file an issue on the GitHub repository.
+
+## Acknowledgments
+
+- OpenAI for providing the Whisper-1 API and GPT-4o-mini model
+- Contributors and users of the DictationApp
